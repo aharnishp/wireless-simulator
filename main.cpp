@@ -29,9 +29,11 @@ float get_power_at_distance(float source_power, float distance){
     return power_d;
 }
 
+
 // packet is assumed to be sent from i to j
 // the range can be asymmetric 
-std::vector<std::vector<float>> edge_mat; // contains adjacency matrix with +ve distance if they are in range, otherwise -ve.
+std::vector<std::vector<float>> edge_d_mat; // contains adjacency matrix with +ve distance if they are in range, otherwise -ve.
+std::vector<std::vector<float>> edge_power_drop;    // contains the factor of power drop of signal originating at the ni node reaching to nj node.
 
 long timestep = 0;
 
@@ -73,69 +75,56 @@ int main() {
         n.radius = std::stof(tokens[4]);
         n.send_wait_time = std::stoi(tokens[5]);
         nodes.push_back(n);
-
-
-
-        // // create edge euclidean distance where ni, nj are nodes i < j
-        // for (int i = 0; i < nodes.size() - 1; i++) {
-        //     for (int j = i + 1; j < nodes.size(); j++) {
-        //         std::cout << "calculating for i: " << i << " j: " << j << std::endl;
-        //         float distance = sqrt(pow(nodes[i].x - nodes[j].x, 2) + pow(nodes[i].y - nodes[j].y, 2) + pow(nodes[i].z - nodes[j].z, 2));
-        //         edge_distance[std::make_pair(i, j)] = distance;
-        //     }
-        // }
     }
 
-    // calculating edge_mat for messages sent from i to j and distance is value at cell, positive if in range, negative if out of range
+    edge_d_mat.reserve(nodes.size());
+
+    // calculating edge_d_mat for messages sent from i to j and distance is value at cell, positive if in range, negative if out of range
     for(int i = 0; i < nodes.size(); i++){
-        std::vector<float> row;
-        row.reserve(nodes.size());
+        std::vector<float> row_d;
+        std::vector<float> row_p;
+        row_d.reserve(nodes.size());
+        row_p.reserve(nodes.size());
         for(int j = 0; j < nodes.size(); j++){
             if(i == j){
-                row.push_back(0);
+                row_d.push_back(0);
+                row_p.push_back(1);
             }else if(i > j){
-                row.push_back(edge_mat[j][i]);
+                row_d.push_back(edge_d_mat[j][i]);
+                row_p.push_back(edge_power_drop[j][i]);
             }else{
-                std::cout << "calculating for i: " << i << " j: " << j << std::endl;
                 float distance = sqrt(pow(nodes[i].x - nodes[j].x, 2) + pow(nodes[i].y - nodes[j].y, 2) + pow(nodes[i].z - nodes[j].z, 2));
-                row.push_back(distance);
+                float power_denominator = 4*pi_val*distance*distance;
+                row_d.push_back(distance);
+                row_p.push_back(1/power_denominator);
+                std::cout << "c[(" << i << "," << ") d=" << distance <<  " pa=" << 1/power_denominator << "]  ";
             }
+            std::cout << std::endl;
         }
-        edge_mat.push_back(row);
+        edge_d_mat.push_back(row_d);
+        edge_power_drop.push_back(row_p);
     }
-    // // print edge_mat
-    // std::cout << "Edge Distance: " << std::endl;
-    // for (int i = 0; i < edge_mat.size(); i++){
-    //     for (int j = 0; j < edge_mat[i].size(); j++){
-    //         std::cout << "(" << i << "," << j+i+1 << ": " << edge_mat[i][j] << ") ";
-    //     }
-    //     std::cout << std::endl;
-    // }
 
-    // // fill other triangle of matrix
-    // for(int i = 0; i < nodes.size(); i++){
-    //     for(int j = 0; j < i; j++){
-    //         if(i > j){
-    //             // float distance = edge_mat[i][j];
-    //             edge_mat[i][j] = edge_mat[j][i];
-    //         }
-    //     }
-    // }
 
-    // print edge_mat
+    // print edge_d_mat
+
     std::cout << "Edge Distance: " << std::endl;
-    for (int i = 0; i < edge_mat.size(); i++){
-        for (int j = 0; j < edge_mat[i].size(); j++){
-            std::cout << "(" << i << "," << j+i+1 << ": " << edge_mat[i][j] << ") ";
+    for (int i = 0; i < edge_d_mat.size(); i++){
+        for (int j = 0; j < edge_d_mat[i].size(); j++){
+            std::cout << "(" << i << "," << j+i+1 << ": " << edge_d_mat[i][j] << ") ";
         }
         std::cout << std::endl;
     }
 
-    // print nodes
-    std::cout << "Input Nodes: " << std::endl;
-    for (auto n : nodes) {
-        std::cout << n.x << " " << n.y << " " << n.z << " " << n.radius << " " << n.send_wait_time << std::endl;
+
+    std::cout << "Power Attenuation (not dB): " << std::endl;
+    for (int i = 0; i < edge_power_drop.size(); i++){
+        for (int j = 0; j < edge_power_drop[i].size(); j++){
+            std::cout << "(" << i << "," << j+i+1 << ": " << edge_power_drop[i][j] << ") ";
+        }
+        std::cout << std::endl;
     }
+
 
     return 0;
 }
