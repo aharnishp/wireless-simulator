@@ -89,17 +89,41 @@ int main() {
     // calculating edge_mat for messages sent from i to j and distance is value at cell, positive if in range, negative if out of range
     for(int i = 0; i < nodes.size(); i++){
         std::vector<float> row;
+        row.reserve(nodes.size());
         for(int j = 0; j < nodes.size(); j++){
-            std::cout << "calculating for i: " << i << " j: " << j << std::endl;
-            float distance = sqrt(pow(nodes[i].x - nodes[j].x, 2) + pow(nodes[i].y - nodes[j].y, 2) + pow(nodes[i].z - nodes[j].z, 2));
-            row.push_back(distance);
+            if(i == j){
+                row.push_back(0);
+            }else if(i > j){
+                row.push_back(edge_mat[j][i]);
+            }else{
+                std::cout << "calculating for i: " << i << " j: " << j << std::endl;
+                float distance = sqrt(pow(nodes[i].x - nodes[j].x, 2) + pow(nodes[i].y - nodes[j].y, 2) + pow(nodes[i].z - nodes[j].z, 2));
+                row.push_back(distance);
+            }
         }
+        edge_mat.push_back(row);
     }
+    // // print edge_mat
+    // std::cout << "Edge Distance: " << std::endl;
+    // for (int i = 0; i < edge_mat.size(); i++){
+    //     for (int j = 0; j < edge_mat[i].size(); j++){
+    //         std::cout << "(" << i << "," << j+i+1 << ": " << edge_mat[i][j] << ") ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // // fill other triangle of matrix
+    // for(int i = 0; i < nodes.size(); i++){
+    //     for(int j = 0; j < i; j++){
+    //         if(i > j){
+    //             // float distance = edge_mat[i][j];
+    //             edge_mat[i][j] = edge_mat[j][i];
+    //         }
+    //     }
+    // }
 
     // print edge_mat
     std::cout << "Edge Distance: " << std::endl;
-        // print each cell in the format (i,j: distance)
-    
     for (int i = 0; i < edge_mat.size(); i++){
         for (int j = 0; j < edge_mat[i].size(); j++){
             std::cout << "(" << i << "," << j+i+1 << ": " << edge_mat[i][j] << ") ";
@@ -107,14 +131,11 @@ int main() {
         std::cout << std::endl;
     }
 
-
-
     // print nodes
     std::cout << "Input Nodes: " << std::endl;
     for (auto n : nodes) {
         std::cout << n.x << " " << n.y << " " << n.z << " " << n.radius << " " << n.send_wait_time << std::endl;
     }
-
 
     return 0;
 }
