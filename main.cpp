@@ -5,10 +5,15 @@
 #include <sstream>
 #include <map>
 #include <cmath>
+
+#define pi_val 3.14
+
+#define SINR_THRESHOLD_dB 25
+
 struct node {
-    int x;
-    int y;
-    int z;
+    float x;
+    float y;
+    float z;
     float radius;
     int send_wait_time;
     long last_packet_sent = 0;
@@ -17,6 +22,15 @@ struct node {
 std::vector<node> nodes;
 // std::map<std::pair<int, int>, float> edge_distance;
 
+
+float get_power_at_distance(float source_power, float distance){
+    // assuming uniform medium
+    float power_d = source_power/(4*pi_val*distance*distance);
+    return power_d;
+}
+
+// packet is assumed to be sent from i to j
+// the range can be asymmetric 
 std::vector<std::vector<float>> edge_mat; // contains adjacency matrix with +ve distance if they are in range, otherwise -ve.
 
 long timestep = 0;
@@ -53,9 +67,9 @@ int main() {
 
         // create node
         node n;
-        n.x = std::stoi(tokens[1]);
-        n.y = std::stoi(tokens[2]);
-        n.z = std::stoi(tokens[3]);
+        n.x = std::stof(tokens[1]);
+        n.y = std::stof(tokens[2]);
+        n.z = std::stof(tokens[3]);
         n.radius = std::stof(tokens[4]);
         n.send_wait_time = std::stoi(tokens[5]);
         nodes.push_back(n);
@@ -72,17 +86,15 @@ int main() {
         // }
     }
 
-    // create lower triangle of adjacency matrix with value = +ve distance which are in range and -ve that are out of range for nodes ni & nj where i > j
-    for (int i = 1; i < nodes.size(); i++){
+    // calculating edge_mat for messages sent from i to j and distance is value at cell, positive if in range, negative if out of range
+    for(int i = 0; i < nodes.size(); i++){
         std::vector<float> row;
-        for(int j = 0; j < i; j++){
+        for(int j = 0; j < nodes.size(); j++){
+            std::cout << "calculating for i: " << i << " j: " << j << std::endl;
             float distance = sqrt(pow(nodes[i].x - nodes[j].x, 2) + pow(nodes[i].y - nodes[j].y, 2) + pow(nodes[i].z - nodes[j].z, 2));
-            if()
-            std::cout << "calculating for (i: " << i << " j: " << j << ") distance: " << distance << std::endl;
+            row.push_back(distance);
         }
-        edge_mat.push_back(row);
     }
-
 
     // print edge_mat
     std::cout << "Edge Distance: " << std::endl;
@@ -94,13 +106,6 @@ int main() {
         }
         std::cout << std::endl;
     }
-
-
-    // // print edge distance
-    // std::cout << "Edge Distance: " << std::endl;
-    // for (auto e : edge_distance) {
-    //     std::cout << "i:" << e.first.first << " j:" << e.first.second << " distance:" << e.second << std::endl;
-    // }
 
 
 
