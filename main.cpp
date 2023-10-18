@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <cmath>
+#include <time.h>
 
 #define pi_val 3.14
 #define telemetry 1
@@ -12,20 +13,24 @@
 #define SINR_THRESHOLD_dB 25
 #define TTL 0   // 0 is infinite packet
 
+struct packet {
+    int id = 0;
+    long source;    // storing int of source node array index in nodes[i]
+    long target;    // storing int of target node array index in nodes[i]
+    long hops = 0;
+    long ttl;
+    int type = 0;   // 0 = data, 1 = ack
+};
+
 struct node {
     float x;
     float y;
     float z;
     float radius;
+    int packet_target_node;
     int send_wait_time;
-    long last_packet_sent = 0;
-};
-
-struct packet { 
-    long source;
-    long target;
-    long hops = 0;
-    long ttl;
+    long next_packet_time = 0;
+    std::vector<packet> packet_buffer;
 };
 
 std::vector<node> nodes;
@@ -76,19 +81,67 @@ std::vector<std::vector<float>> edge_d_mat; // contains adjacency matrix with +v
 std::vector<std::vector<float>> edge_power_drop;    // contains the factor of power drop of signal originating at the ni node reaching to nj node.
 
 long timestep = 0;
+long next_new_packet_id = 0;
 
+// DEPRECATED live_packets as packets would be stored inside nodes' buffer
+// std::vector<packet> live_packets;
 
-std::vector<void> packet;
+int generate_int_between(int min, int max){
+    // assuming seed is declared in main()
+    return (min + (rand() % (max - min + 1)));
+}
+
+// build packets from nodes which have not sent their own packets since last time.
+void generate_self_packets(){
+    // for every node in nodes
+    for(int i = 0; i < nodes.size(); i++){
+        // check if this node has to send a packet now or earlier.
+        if(nodes[i].next_packet_time >=  timestep){
+            // calculate next timestep to send packet
+            nodes[i].next_packet_time = timestep + nodes[i].send_wait_time;
+
+            packet new_packet;
+            new_packet.ttl = TTL;
+            new_packet.source = i;
+            new_packet.hops = 0;
+            // if packet_target_node is -1, then set packet target to random
+            if(nodes[i].packet_target_node == -1){
+                new_packet.target = generate_int_between(0, nodes.size());
+            }else{  // set to actual value
+                new_packet.target = nodes[i].packet_target_node;
+            }
+
+            // TODO: Check memory management
+            // adding packet to it's own packet_buffer
+            nodes[i].packet_buffer.push_back(new_packet);
+        }
+
+    }
+}
+
+int simulate_one_step(){
+
+    // for every node in nodes
+    for(int i = 0; i < nodes.size(); i++){
+        // get list of packets in buffer
+        // send a packet from the top of the buffer.
+
+        //
+
+    }
+
+    return 0;
+}
 
 int simulate(long end_timestep) {
     while (timestep < end_timestep) {
         for(int i = 0; i < nodes.size(); i++){
             // check when was last packet sent
-            if(timestep - nodes[i].last_packet_sent >= nodes[i].send_wait_time){
+            // FIXME: if(timestep - nodes[i].last_packet_sent >= nodes[i].send_wait_time){
                 // send packet
-                nodes[i].last_packet_sent = timestep;
-                std::cout << "sending packet from node " << i << " at timestep " << timestep << std::endl;
-            }
+                // nodes[i].last_packet_sent = timestep;
+                // std::cout << "sending packet from node " << i << " at timestep " << timestep << std::endl;
+            // }
         }
             timestep++;
     }
@@ -96,6 +149,7 @@ int simulate(long end_timestep) {
 }
 
 int main() {
+    srand(time(NULL));
     // read csv file
     std::ifstream file("input_nodes.csv");
     std::string line;
@@ -117,6 +171,7 @@ int main() {
         n.z = std::stof(tokens[3]);
         n.radius = std::stof(tokens[4]);
         n.send_wait_time = std::stoi(tokens[5]);
+        n.packet_target_node = std::stoi(tokens[6]);
         nodes.push_back(n);
     }
 
