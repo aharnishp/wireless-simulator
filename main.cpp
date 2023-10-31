@@ -14,12 +14,13 @@
 #define TTL 0   // 0 is infinite packet
 
 struct packet {
-    int id = 0;
+    long id = 0;
     long source;    // storing int of source node array index in nodes[i]
     long target;    // storing int of target node array index in nodes[i]
     long hops = 0;
     long ttl;
     int type = 0;   // 0 = data, 1 = ack
+    int reaching_time = 0;
 };
 
 struct node {
@@ -101,6 +102,9 @@ void generate_self_packets(){
             nodes[i].next_packet_time = timestep + nodes[i].send_wait_time;
 
             packet new_packet;
+            new_packet.id = next_new_packet_id;
+            next_new_packet_id++;   // also increment
+
             new_packet.ttl = TTL;
             new_packet.source = i;
             new_packet.hops = 0;
@@ -157,6 +161,7 @@ int main() {
     std::getline(file, line); 
     // parse each line of csv file with comma separated
     while (std::getline(file, line)) {
+    // check in cache file
         std::stringstream ss(line);
         std::string token;
         std::vector<std::string> tokens;
@@ -224,7 +229,7 @@ int main() {
         std::cout << std::endl;
     }
 
-
+    // this is to plot graph of attenuation vs distance based on ideal and more realistic fn.
     // print values from ideal attenuation and attenuation function for linspace to see similarity
     std::cout << "Ideal Attenuation: " << std::endl;
     test_ideal_attenuation_fn();
